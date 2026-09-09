@@ -35,6 +35,10 @@ namespace MiniBank_API.Application.Controllers
                 newCustomer.Email = data.EmailAddress;
                 newCustomer.DateOfBirth = data.DateOfBirth;
                 newCustomer.AccountDetails = newAccount;
+
+                PasswordHasherClass Hash = new PasswordHasherClass();
+                newCustomer.HashedPassword = Hash.HashPassword(newCustomer, data.Password);
+
                 db.Customers.Add(newCustomer);
                 await db.SaveChangesAsync();
                 return Ok(new { accounts = await db.Accounts.ToListAsync() , Customers = await db.Customers.ToListAsync() });
@@ -55,6 +59,10 @@ namespace MiniBank_API.Application.Controllers
                 newCustomer.Email = data.EmailAddress;
                 newCustomer.DateOfBirth = data.DateOfBirth;
                 newCustomer.AccountDetails = newAccount;
+
+                PasswordHasherClass Hash = new PasswordHasherClass();
+                newCustomer.HashedPassword = Hash.HashPassword(newCustomer, data.Password);
+
                 db.Customers.Add(newCustomer);
                 await db.SaveChangesAsync();
                 return Ok();
@@ -82,6 +90,31 @@ namespace MiniBank_API.Application.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> LoginCustomer()
+        public async Task<IActionResult> LoginCustomer(CustomerLoginDTO data, [FromServices] AccountDbContext db)
+        {
+            Customer? newCustomer = await db.Customers.Where(h => h.Email == data.EmailAddress).FirstOrDefaultAsync();
+
+            if (newCustomer != null)
+            {
+                PasswordHasherClass Hash = new PasswordHasherClass();
+
+                if (Hash.VerifyPassword(newCustomer, data.Password, newCustomer.HashedPassword))
+                {
+                    return Ok("Login Successful");
+                }
+                else if(Hash.VerifyPassword(newCustomer, data.Password, newCustomer.HashedPassword) == false)
+                {
+                    return BadRequest("Wrong EmailAddress or Password");
+                }
+                else
+                {
+                    return BadRequest("Unknown Error");
+                }
+            }
+            else
+            {
+                return NotFound("Customer Not found");
+            }
+        }
     }
 }
