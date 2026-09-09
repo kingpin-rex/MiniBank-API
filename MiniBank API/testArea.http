@@ -1,0 +1,27 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+PUT https://localhost:7068/Accounts/5
+Content-Type: application/json
+
+{
+    "amount" : 5000.00
+}
+
+###
+
+GET https://localhost:7068/Accounts/2
+Content-Type: application/json
+
+###
+PUT https://localhost:7068/Accounts/12/withdraw
+Content-Type: application/json
+
+{
+    "amount" : 900,
+    "newType" : 1
+}
+
+###
+GET https://localhost:7068/Customers/11
+Content-Type: application/json
+
+###
