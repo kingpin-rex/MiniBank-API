@@ -89,7 +89,7 @@ namespace MiniBank_API.Application.Controllers
 
         }
 
-        [HttpGet]
+        [HttpPost("/Login")]
         public async Task<IActionResult> LoginCustomer(CustomerLoginDTO data, [FromServices] AccountDbContext db)
         {
             Customer? newCustomer = await db.Customers.Where(h => h.Email == data.EmailAddress).FirstOrDefaultAsync();
