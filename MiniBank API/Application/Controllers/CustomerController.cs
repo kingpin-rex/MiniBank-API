@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -79,7 +80,7 @@ namespace MiniBank_API.Application.Controllers
                 return BadRequest();
             }
         }
-
+        [Authorize]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> DiscoverCustomer([FromServices] AccountDbContext db, int id)
         {
