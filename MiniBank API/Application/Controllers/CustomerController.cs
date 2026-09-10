@@ -13,6 +13,13 @@ namespace MiniBank_API.Application.Controllers
     [ApiController]
     public class Customers : ControllerBase
     {
+        private readonly IConfiguration _configuration;
+
+        public Customers(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateCustomer([FromBody] CustomerCreationDTO data, [FromServices] AccountDbContext db)
         {
@@ -100,7 +107,9 @@ namespace MiniBank_API.Application.Controllers
 
                 if (Hash.VerifyPassword(newCustomer, data.Password, newCustomer.HashedPassword))
                 {
-                    return Ok("Login Successful");
+                    var tokenGenerator = new TokenGenerator(_configuration);
+                    string token = tokenGenerator.GenerateToken(newCustomer);
+                    return Ok(new {Status = "Login successful", Token = token});
                 }
                 else if(Hash.VerifyPassword(newCustomer, data.Password, newCustomer.HashedPassword) == false)
                 {
