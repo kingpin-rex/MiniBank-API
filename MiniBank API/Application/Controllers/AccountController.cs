@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using MiniBank_API.Application.AccountDatabase;
 using MiniBank_API.Application.DTOs;
 using MiniBank_API.Application.Utilities;
+using System.Security.Claims;
 using System.Security.Principal;
 
 
@@ -31,10 +33,24 @@ namespace MiniBank_API.Application.Controllers
             
         }
 
+        [Authorize]
         [HttpPut("{id:int}/deposit")]
         public async Task<IActionResult> DepositAccount([FromServices] AccountDbContext db,[FromBody] AccountDepositDTO data, int id)
         {
             var newAccount = await db.Accounts.Where(h => h.Id == id).FirstOrDefaultAsync();
+            string? idString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            
+            if(!int.TryParse(idString, out int loggedInCustomerId))
+            {
+                return Unauthorized("Invalid Token Claim");
+            }
+
+            if (loggedInCustomerId != newAccount.CustomerId)
+            {
+                return Forbid();
+            }
+
+           
             if (newAccount != null && decimal.IsPositive(data.Amount))
             {
                 newAccount.Balance += data.Amount;
@@ -61,15 +77,29 @@ namespace MiniBank_API.Application.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut("{id:int}/withdraw")]
         public async Task<IActionResult> WithdrawAccount ([FromServices] AccountDbContext db, int id, AccountWithdrawDTO data)
         {
+            var otherAccount = await db.Accounts.Where(h => h.Id == id).FirstOrDefaultAsync();
             Transaction newTransaction = new Transaction();
             newTransaction.AccountId = id;
             newTransaction.Type = TransactionType.Withdrawal;
             newTransaction.Amount = data.Amount;
             newTransaction.Timestamp = DateTime.UtcNow;
-            
+
+            string? idString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!int.TryParse(idString, out int loggedInCustomerId))
+            {
+                return Unauthorized("Invalid Token Claim");
+            }
+
+            if (loggedInCustomerId != otherAccount.CustomerId)
+            {
+                return Forbid();
+            }
+
             if (data.newType == AccountType.Current)
             {
                 var newAccount = await db.CurrentAccounts.Where(h => h.Id == id).FirstOrDefaultAsync();
@@ -146,9 +176,10 @@ namespace MiniBank_API.Application.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         public async Task<IActionResult>  TransferAccount([FromServices] AccountDbContext db, int id, AccountTransferDTO data)
-        {
+        {   
             var senderAccount = await db.Accounts.Where(h => h.Id == id).FirstOrDefaultAsync();
             var recipientAccount = await db.Accounts.Where(h => h.Id == data.RecipientAccountId).FirstOrDefaultAsync();
             Transaction SenderTransaction = new Transaction();
@@ -162,6 +193,20 @@ namespace MiniBank_API.Application.Controllers
             RecipientTransaction.Type = TransactionType.TransferIn;
             RecipientTransaction.Timestamp = DateTime.UtcNow;
             RecipientTransaction.Amount = data.Amount;
+            
+            string? idString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!int.TryParse(idString, out int loggedInCustomerId))
+            {
+                return Unauthorized("Invalid Token Claim");
+            }
+
+            if (loggedInCustomerId != senderAccount.CustomerId)
+            {
+                return Forbid();
+            }
+
+            
             if (senderAccount != null && recipientAccount != null && decimal.IsPositive(data.Amount))
             {
                 if (senderAccount.Balance > data.Amount)

@@ -80,7 +80,7 @@ namespace MiniBank_API.Application.Controllers
                 return BadRequest();
             }
         }
-        [Authorize]
+        
         [HttpGet("{id:int}")]
         public async Task<IActionResult> DiscoverCustomer([FromServices] AccountDbContext db, int id)
         {
